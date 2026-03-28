@@ -1,0 +1,51 @@
+@baseUrl = http://localhost:8080
+@auth_token = eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJzZWVrZXJAZ21haWwuY29tIiwidXNlcklkIjoiMWEyY2U3MDUtNjkxNS00ZWFhLWFlMmMtZDc0Y2Y5Y2MzODBlIiwiaWF0IjoxNzc0NjMzNTk3LCJleHAiOjE3NzQ2Njk1OTd9.OOoPJBwt-PTYswwg8aZZhVt1zHLIFJsCT3h2UrtvNHY
+
+### Create Job
+POST {{baseUrl}}/api/jobs
+Content-Type: application/json
+Authorization: Bearer {{auth_token}}
+
+{
+  "title": "Java Developer",
+  "description": "Develop Spring Boot applications",
+  "requirements": "3+ years of experience",
+  "salaryMin": 2000,
+  "salaryMax": 4000,
+  "location": "Ho Chi Minh City",
+  "jobType": "full_time"
+}
+
+### Get Job by ID
+GET {{baseUrl}}/api/jobs/{jobId}
+
+### Get All Active Jobs
+GET {{baseUrl}}/api/jobs?limit=10&offset=0
+
+### Search Active Jobs by Title
+GET {{baseUrl}}/api/jobs?title=Java
+
+### Get All Jobs (Admin/All)
+GET {{baseUrl}}/api/jobs/all
+
+### Search All Jobs by Title
+GET {{baseUrl}}/api/jobs/all?title=Java
+
+### Update Job
+PUT {{baseUrl}}/api/jobs/{jobId}
+Content-Type: application/json
+Authorization: Bearer {{auth_token}}
+
+{
+  "title": "Senior Java Developer",
+  "description": "Lead Spring Boot development",
+  "requirements": "5+ years of experience",
+  "salaryMin": 3000,
+  "salaryMax": 6000,
+  "location": "Ho Chi Minh City",
+  "jobType": "full_time"
+}
+
+### Inactivate Job
+PATCH {{baseUrl}}/api/jobs/{jobId}/inactivate
+Authorization: Bearer {{auth_token}}

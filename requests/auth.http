@@ -1,0 +1,67 @@
+@baseUrl = http://localhost:8080
+
+@token = 
+
+### Regist user 1
+POST {{baseUrl}}/api/auth/register
+Content-Type: application/json
+
+{
+  "email": "seeker@gmail.com",
+  "password": "123456",
+  "fullName": "Nguyen Van A"
+}
+
+### Regist no email seeker
+POST {{baseUrl}}/api/auth/register
+Content-Type: application/json
+
+{
+  "password": "123456",
+  "fullName": "Nguyen Van A"
+}
+
+### Regist recruiter
+POST {{baseUrl}}/api/auth/register
+Content-Type: application/json
+
+{
+  "email": "recruiter@gmail.com",
+  "password": "123456",
+  "fullName": "Tran Thi B"
+}
+
+### Regist company's recruiter
+POST {{baseUrl}}/api/auth/register
+Content-Type: application/json
+
+{
+  "email": "recruiter2@gmail.com",
+  "password": "123456",
+  "fullName": "Le Van C"
+}
+
+### Login user 1
+POST {{baseUrl}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "seeker@gmail.com",
+  "password": "123456"
+}
+
+### Login user 2
+POST {{baseUrl}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "recruiter@gmail.com",
+  "password": "123456"
+}
+
+### Logout
+POST {{baseUrl}}/api/auth/logout
+Authorization: Bearer {{token}}
+
+### Admin
+#Authorization: Basic {{username}} {{password}}

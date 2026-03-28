@@ -1,0 +1,10 @@
+@baseUrl = http://localhost:8080
+@auth_token =
+
+### Get User by ID
+GET {{baseUrl}}/api/users/{{userId}}
+Authorization: Bearer {{auth_token}}
+
+### Get all
+GET {{baseUrl}}/api/users
+Authorization: Bearer {{auth_token}}

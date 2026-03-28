@@ -1,0 +1,31 @@
+@baseUrl = http://localhost:8080
+@auth_token = eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJzZWVrZXJAZ21haWwuY29tIiwidXNlcklkIjoiMWEyY2U3MDUtNjkxNS00ZWFhLWFlMmMtZDc0Y2Y5Y2MzODBlIiwiaWF0IjoxNzc0NjMzNTk3LCJleHAiOjE3NzQ2Njk1OTd9.OOoPJBwt-PTYswwg8aZZhVt1zHLIFJsCT3h2UrtvNHY
+
+
+### Upload CV EN
+POST {{baseUrl}}/api/cvs
+Authorization: Bearer {{auth_token}}
+Content-Type: multipart/form-data; boundary=boundary
+
+--boundary
+Content-Disposition: form-data; name="file"; filename="cv_en.pdf"
+Content-Type: application/pdf
+
+< ../test_data/cv_en.pdf
+--boundary--
+
+### Upload CV VN
+POST {{baseUrl}}/api/cvs
+Authorization: Bearer {{auth_token}}
+Content-Type: multipart/form-data; boundary=boundary
+
+--boundary
+Content-Disposition: form-data; name="file"; filename="cv_vn.pdf"
+Content-Type: application/pdf
+
+< ../test_data/cv_vn.pdf
+--boundary--
+
+### Get My CVs
+GET {{baseUrl}}/api/cvs
+Authorization: Bearer {{auth_token}}

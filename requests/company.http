@@ -1,0 +1,37 @@
+@baseUrl = http://localhost:8080
+@auth_token = eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJzZWVrZXJAZ21haWwuY29tIiwidXNlcklkIjoiMWEyY2U3MDUtNjkxNS00ZWFhLWFlMmMtZDc0Y2Y5Y2MzODBlIiwiaWF0IjoxNzc0NjMzNTk3LCJleHAiOjE3NzQ2Njk1OTd9.OOoPJBwt-PTYswwg8aZZhVt1zHLIFJsCT3h2UrtvNHY
+
+
+### Create Company
+POST {{baseUrl}}/api/companies
+Content-Type: application/json
+Authorization: Bearer {{auth_token}}
+
+{
+  "name": "FPT Software",
+  "contactEmail": "hr@fpt.com",
+  "description": "Leading global technology and IT services provider",
+  "website": "https://fptsoftware.com"
+}
+
+### Get All Companies
+GET {{baseUrl}}/api/companies
+
+### Get Company by ID
+GET {{baseUrl}}/api/companies?id={companyId}
+
+### Update Company
+PUT {{baseUrl}}/api/companies/update
+Content-Type: application/json
+Authorization: Bearer {{auth_token}}
+
+{
+  "name": "FPT Software Vietnam",
+  "contactEmail": "hr-vn@fpt.com",
+  "description": "Leading IT provider in Vietnam",
+  "website": "https://fptsoftware.com/vn"
+}
+
+### Delete Company
+DELETE {{baseUrl}}/api/companies
+Authorization: Bearer {{auth_token}}

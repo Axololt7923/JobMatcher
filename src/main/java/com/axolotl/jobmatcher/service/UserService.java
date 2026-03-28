@@ -1,0 +1,125 @@
+package com.axolotl.jobmatcher.service;
+
+// service/UserService.java
+import com.axolotl.jobmatcher.dto.RegisterRequest;
+import com.axolotl.jobmatcher.dto.user.LoginRequest;
+import com.axolotl.jobmatcher.dto.user.LoginResponse;
+import com.axolotl.jobmatcher.dto.user.UserResponse;
+import com.axolotl.jobmatcher.entity.Company;
+import com.axolotl.jobmatcher.entity.Job;
+import com.axolotl.jobmatcher.entity.User;
+import com.axolotl.jobmatcher.exception.AppException;
+import com.axolotl.jobmatcher.repository.UserRepository;
+import com.axolotl.jobmatcher.security.JwtService;
+import com.axolotl.jobmatcher.repository.CompanyRepository;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Service;
+
+import java.util.List;
+import java.util.UUID;
+
+@Service
+@RequiredArgsConstructor
+public class UserService {
+
+    private final UserRepository userRepository;
+    private final PasswordEncoder passwordEncoder;
+    private final JwtService jwtService;
+    private final CompanyRepository companyRepository;
+
+    public UserResponse register(RegisterRequest request) {
+
+        if (userRepository.existsByEmail(request.getEmail())) {
+            throw new AppException("Email is already registered", HttpStatus.CONFLICT);
+        }
+
+        Company company = null;
+
+        if (request.getCompanyId() != null) {
+
+            company = companyRepository.findById(request.getCompanyId())
+                    .orElseThrow(() -> new AppException("Company doesn't exist", HttpStatus.NOT_FOUND));
+
+            if (userRepository.existsByCompanyId(company.getId()))
+                throw new AppException("This company already have recruiter account", HttpStatus.CONFLICT);
+
+        }
+
+        User user = User.builder()
+                .email(request.getEmail())
+                .password(passwordEncoder.encode(request.getPassword()))
+                .fullName(request.getFullName())
+                .company(company)
+                .build();
+
+        User saved = userRepository.save(user);
+
+        return UserResponse.builder()
+                .id(saved.getId())
+                .email(saved.getEmail())
+                .fullName(saved.getFullName())
+                .createdAt(saved.getCreatedAt())
+                .build();
+    }
+
+    public List<UserResponse> getById(UUID id) {
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new AppException("User doesn't exist", HttpStatus.NOT_FOUND));
+        return List.of(toResponse(user));
+    }
+
+    public List<UserResponse> getAll(int limit, int offset) {
+        if (limit > 100 || limit < 0) {
+            throw new AppException("Limit must be less than 100 and bigger than 0", HttpStatus.BAD_REQUEST);
+        }
+        if (offset < 0) {
+            throw new AppException("Offset must be bigger than 0", HttpStatus.BAD_REQUEST);
+        }
+
+        List<User> users = userRepository.findAll();
+        int len_jobs = users.size();
+        int begin_idx = offset > len_jobs ? len_jobs - 1 : offset;
+        int end_idx = Math.min(begin_idx + limit, len_jobs);
+
+        return  users.subList(begin_idx, end_idx)
+                .stream()
+                .map(this::toResponse)
+                .toList();
+    }
+
+    public LoginResponse login(LoginRequest request) {
+        User user = userRepository.findByEmail(request.getEmail())
+                .orElseThrow(() -> new AppException("Email doesn't exist", HttpStatus.NOT_FOUND));
+
+        if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
+            throw new AppException("Wrong password", HttpStatus.UNAUTHORIZED);
+        }
+
+        String token = jwtService.generateToken(user.getId(), user.getEmail());
+
+        return LoginResponse.builder()
+                .token(token)
+                .user(toResponse(user))
+                .build();
+    }
+
+    public void removeCompany(UUID userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new AppException("User doesn't exist", HttpStatus.NOT_FOUND));
+        user.setCompany(null);
+        userRepository.save(user);
+    }
+
+    private UserResponse toResponse(User user) {
+        return UserResponse.builder()
+                .id(user.getId())
+                .email(user.getEmail())
+                .fullName(user.getFullName())
+                .companyName(user.getCompany() != null ? user.getCompany().getName() : null)
+                .companyId(user.getCompany() != null ? user.getCompany().getId() : null)
+                .createdAt(user.getCreatedAt())
+                .build();
+    }
+}
