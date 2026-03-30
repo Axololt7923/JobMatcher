@@ -53,6 +53,8 @@ src/main/resources
 - [!Optional] Docker & Docker Compose
 
 ## Installation
+### 0. ***Install and running ai-service***
+https://github.com/Axololt7923/ai-service.git
 
 ### 1. ***Clone the repository***
 ```bash
@@ -63,7 +65,6 @@ cd JobMatcher
 ```bash
 mvn clean install
 ```
-
 
 ### 3. ***Create `.env` file***
 ```
