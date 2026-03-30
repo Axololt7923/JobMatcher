@@ -32,4 +32,9 @@ public class AuthController {
     public ResponseEntity<Void> logout() {
         return ResponseEntity.noContent().build();
     }
+
+    @GetMapping("/heath")
+    public ResponseEntity<String> heath() {
+        return ResponseEntity.ok("OK");
+    }
 }

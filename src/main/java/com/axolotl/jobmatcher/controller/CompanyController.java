@@ -4,6 +4,7 @@ import com.axolotl.jobmatcher.dto.company.CompanyRequest;
 import com.axolotl.jobmatcher.dto.company.CompanyResponse;
 import com.axolotl.jobmatcher.security.UserPrincipal;
 import com.axolotl.jobmatcher.service.CompanyService;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -15,6 +16,7 @@ import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/companies")
+@SecurityRequirement(name = "bearerAuth")
 @RequiredArgsConstructor
 public class CompanyController {
 
@@ -29,12 +31,14 @@ public class CompanyController {
     }
 
     @GetMapping
-    public ResponseEntity<List<CompanyResponse>> companies(
-            @RequestParam(required = false) UUID id) {
+    public ResponseEntity<List<CompanyResponse>> company(
+            @RequestParam(required = false) UUID id,
+            @RequestParam(defaultValue = "20") int limit,
+            @RequestParam(defaultValue = "0") int offset) {
         if (id != null) {
             return ResponseEntity.ok(companyService.getById(id));
         }
-        return ResponseEntity.ok(companyService.getAll());
+        return ResponseEntity.ok(companyService.getAll(limit, offset));
     }
 
     @PutMapping("/update")

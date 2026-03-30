@@ -1,6 +1,6 @@
 @baseUrl = http://localhost:8080
 
-@token = 
+@token = add_token
 
 ### Regist user 1
 POST {{baseUrl}}/api/auth/register

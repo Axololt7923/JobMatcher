@@ -1,11 +1,12 @@
 ai:
   service:
-    url: http://localhost:8000
+    url: ${AI_SERVICE_URL}
+    key: ${AI_SERVICE_KEY}
 spring:
   datasource:
-    url: jdbc:postgresql://localhost:5432/job-matcher
-    username: ax0lotl79
-    password: password
+    url: jdbc:postgresql://postgres:5432/${DB_NAME}
+    username: ${DB_USER}
+    password: ${DB_PASSWORD}
   jpa:
     hibernate:
       ddl-auto: validate
@@ -18,12 +19,9 @@ spring:
     multipart:
       max-file-size: 10MB
       max-request-size: 10MB
-  security:
-    user:
-      password: minad
 
 jwt:
-  secret: "random-secret-key-tryingtomakeitlonger"
+  secret: ${JWT_SECRET}
   expiration: 36000000 #10 hours
 server:
   port: 8080

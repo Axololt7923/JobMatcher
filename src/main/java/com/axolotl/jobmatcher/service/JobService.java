@@ -3,9 +3,11 @@ package com.axolotl.jobmatcher.service;
 import com.axolotl.jobmatcher.dto.job.JobRequest;
 import com.axolotl.jobmatcher.dto.job.JobResponse;
 import com.axolotl.jobmatcher.entity.Job;
+import com.axolotl.jobmatcher.entity.User;
 import com.axolotl.jobmatcher.exception.AppException;
 import com.axolotl.jobmatcher.repository.JobRepository;
 import com.axolotl.jobmatcher.repository.UserRepository;
+import com.axolotl.jobmatcher.utils.Utils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -23,9 +25,9 @@ public class JobService {
     private final AIService aiService;
 
     public JobResponse create(JobRequest request, UUID recruiterId) {
-        if (!userRepository.existsById(recruiterId))
-                throw new AppException("User doesn't exist", HttpStatus.NOT_FOUND);
-
+        User recruiter = userRepository.findById(recruiterId).orElseThrow(
+                () -> new AppException("User doesn't exist", HttpStatus.NOT_FOUND)
+        );
         Job job = Job.builder()
                 .title(request.getTitle())
                 .description(request.getDescription())
@@ -36,18 +38,19 @@ public class JobService {
                 .jobType(request.getJobType())
                 .sourceUrl(request.getSourceUrl())
                 .expiredAt(request.getExpiredAt())
+                .company(recruiter.getCompany())
+                .createdBy(recruiter)
                 .build();
 
-        Job saved = jobRepository.save(job);
-
         try {
-            aiService.upsertJob(saved);
+            job = jobRepository.save(job);
+            aiService.upsertJob(job);
+            return toResponse(jobRepository.save(job));
         }
         catch (Exception e) {
+            jobRepository.delete(job);
             throw new AppException("Failed to upsert job", HttpStatus.INTERNAL_SERVER_ERROR);
         }
-
-        return toResponse(saved);
     }
 
     public JobResponse getById(UUID id) {
@@ -76,13 +79,26 @@ public class JobService {
                 .toList();
     }
 
-    public List<JobResponse> getAll() {
-        return jobRepository.findAll()
+    public List<JobResponse> getAll( boolean isActive, int limit, int offset) {
+        if (isActive) {
+            return getAllActivate(limit, offset);
+        }
+        if (limit > 100 || limit < 0) {
+            throw new AppException("Limit must be less than 100 and bigger than 0", HttpStatus.BAD_REQUEST);
+        }
+        if (offset < 0) {
+            throw new AppException("Offset must be bigger than 0", HttpStatus.BAD_REQUEST);
+        }
+
+        List<Job> jobs = jobRepository.findAll();
+
+        return Utils.getResponsePage(jobs, offset, limit)
                 .stream()
                 .map(this::toResponse)
                 .toList();
     }
 
+    @Deprecated
     public List<JobResponse> search(String title) {
         return jobRepository.findByTitleContainingIgnoreCase(title)
                 .stream()
@@ -126,14 +142,14 @@ public class JobService {
         if (!job.getIsActive()) {
             throw new AppException("Inactivated job", HttpStatus.CONFLICT);
         }
-
-        job.setIsActive(false);
-        jobRepository.save(job);
         try {
             aiService.deletedJobVector(job.getChromaId());
+            job.setIsActive(false);
+            aiService.validateService();
+            jobRepository.save(job);
         }
         catch (Exception e) {
-            System.out.println("Failed to delete job vector");
+            throw new AppException("Failed to inactivate job", HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 
@@ -164,4 +180,6 @@ public class JobService {
         }
         return job.getCreatedBy() != null ? job.getCreatedBy().getEmail() : null;
     }
+
+
 }

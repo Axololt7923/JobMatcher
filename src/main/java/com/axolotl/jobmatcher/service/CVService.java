@@ -12,6 +12,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -42,6 +43,7 @@ public class CVService {
         cvRepository.findByUserIdAndIsActiveTrue(userId)
                 .ifPresent(oldCV -> {
                     oldCV.setIsActive(false);
+                    aiService.deletedJobVector(oldCV.getChromaId());
                     cvRepository.save(oldCV);
                 });
 
@@ -50,25 +52,28 @@ public class CVService {
                 .fileUrl(filePath.toString())
                 .isActive(true)
                 .build();
-        cv = cvRepository.save(cv);
+        try {
+            AIService.CVParsedResult parsed = aiService.parseCV(file.getBytes(), user.getId());
+            cv.setChromaId(parsed.getChromaId());
+            cv = cvRepository.save(cv);
 
-        AIService.CVParsedResult parsed = aiService.parseCV(file.getBytes(), user.getId());
+            CVParsedData parsedData = CVParsedData.builder()
+                    .cv(cv)
+                    .skills(parsed.getSkills())
+                    .experienceYears(parsed.getExperienceYears())
+                    .educationLevel(parsed.getEducationLevel())
+                    .languages(parsed.getLanguages())
+                    .summary(parsed.getSummary())
+                    .rawJson(new ObjectMapper().writeValueAsString(parsed))
+                    .build();
 
-        cv.setChromaId(parsed.getChromaId());
-        cv = cvRepository.save(cv);
+            cvParsedDataRepository.save(parsedData);
 
-        CVParsedData parsedData = CVParsedData.builder()
-                .cv(cv)
-                .skills(parsed.getSkills())
-                .experienceYears(parsed.getExperienceYears())
-                .educationLevel(parsed.getEducationLevel())
-                .languages(parsed.getLanguages())
-                .summary(parsed.getSummary())
-                .rawJson(parsed.getRawJson())
-                .build();
-        cvParsedDataRepository.save(parsedData);
-
-        return toResponse(cv, parsedData);
+            return toResponse(cv, parsedData);
+        }
+        catch (Exception e) {
+            throw new AppException("Failed to upload CV", HttpStatus.INTERNAL_SERVER_ERROR);
+        }
     }
 
     public List<CVResponse> getByUserId(UUID userId) {
@@ -82,12 +87,31 @@ public class CVService {
                 .toList();
     }
 
-    public CVResponse getById(UUID id) {
+    public void delete(UUID id, UUID userId) {
         CV cv = cvRepository.findById(id)
-                .orElseThrow(() -> new AppException("CV doesn't exist", HttpStatus.NOT_FOUND));
-        CVParsedData parsed = cvParsedDataRepository
-                .findByCvId(id).orElse(null);
-        return toResponse(cv, parsed);
+                .orElse(null);
+        if (cv == null || !cv.getUser().getId().equals(userId)) {
+            throw new AppException("No permission", HttpStatus.FORBIDDEN);
+        }
+        try {
+            aiService.deleteCVParsedVectors(cv.getChromaId());
+            cvRepository.deleteById(id);
+
+            Path path = Paths.get(cv.getFileUrl());
+
+            boolean result = Files.deleteIfExists(path);
+
+            if (result) {
+                System.out.println("Deleted file: " + path);
+            }
+            else {
+                System.out.println("File not found");
+            }
+        } catch (IOException e) {
+            System.err.println("Error catch: " + e.getMessage());
+        } catch (Exception e) {
+            throw new AppException("Failed to delete CV", HttpStatus.INTERNAL_SERVER_ERROR);
+        }
     }
 
     private CVResponse toResponse(CV cv, CVParsedData parsed) {

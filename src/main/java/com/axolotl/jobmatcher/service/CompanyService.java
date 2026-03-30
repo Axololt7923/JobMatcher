@@ -7,12 +7,12 @@ import com.axolotl.jobmatcher.entity.User;
 import com.axolotl.jobmatcher.exception.AppException;
 import com.axolotl.jobmatcher.repository.CompanyRepository;
 import com.axolotl.jobmatcher.repository.UserRepository;
+import com.axolotl.jobmatcher.utils.Utils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
-import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 
@@ -56,13 +56,20 @@ public class CompanyService {
         return List.of(toResponse(company));
     }
 
-    public List<CompanyResponse> getAll() {
-        return companyRepository.findAll()
+    public List<CompanyResponse> getAll(int limit, int offset) {
+        if (limit > 100 || limit < 0) {
+            throw new AppException("Limit must be less than 100 and bigger than 0", HttpStatus.BAD_REQUEST);
+        }
+        if (offset < 0) {
+            throw new AppException("Offset must be bigger than 0", HttpStatus.BAD_REQUEST);
+        }
+        return Utils.getResponsePage(companyRepository.findAll(), offset, limit)
                 .stream()
                 .map(this::toResponse)
                 .toList();
     }
 
+    @Deprecated
     public List<CompanyResponse> search(String name) {
         return companyRepository.findByNameContainingIgnoreCase(name)
                 .stream()

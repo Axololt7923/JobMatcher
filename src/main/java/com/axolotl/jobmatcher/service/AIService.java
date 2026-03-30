@@ -7,14 +7,10 @@ import com.axolotl.jobmatcher.exception.AppException;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.core.io.ByteArrayResource;
-import org.springframework.http.HttpStatus;
+import org.springframework.http.HttpStatusCode;
 import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
 import org.springframework.http.client.MultipartBodyBuilder;
 import org.springframework.stereotype.Service;
-import org.springframework.util.LinkedMultiValueMap;
-import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestClient;
 
 import java.util.List;
@@ -25,29 +21,22 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class AIService {
 
+    private final RestClient restClient;
     @Value("${ai.service.url:http://127.0.0.1:8000}")
     private String aiServiceUrl;
 
-    private final RestClient restClient = RestClient.create();
+    @Value("${ai.service.key}")
+    private String apiKey;
 
-
-    public void validateService(){
-        ResponseEntity<Map> response = restClient.get()
+    public void validateService() {
+        restClient.get()
                 .uri(aiServiceUrl + "/health")
                 .retrieve()
-                .toEntity(Map.class);
-
-
-        String status = (String) response.getBody().get("status");
-
-        if (status == null) {
-            throw new AppException("AI service is not available", HttpStatus.SERVICE_UNAVAILABLE);
-        }
-        if (!status.equals("ok")) {
-            throw new AppException("AI service is not available", HttpStatus.SERVICE_UNAVAILABLE);
-        }
+                .onStatus(HttpStatusCode::isError, (request, response) -> {
+                    throw new AppException(response.toString(),response.getStatusCode());
+                })
+                .toBodilessEntity();
     }
-
 
     public CVParsedResult parseCV(byte[] fileBytes, UUID userId) {
 
@@ -63,15 +52,14 @@ public class AIService {
 
         CVParseResponse response = restClient.post()
                 .uri("http://127.0.0.1:8000/cv_parsed")
-                .header("X-API-KEY", "random_api_key_for_testing")//temp hardcode
+                .header("X-API-KEY", apiKey)
                 .contentType(MediaType.MULTIPART_FORM_DATA)
                 .body(builder.build())
                 .retrieve()
-                .body(CVParseResponse.class);
-
-        if (response == null) {
-            throw new AppException("Failed to parse CV", HttpStatus.BAD_REQUEST);
-        }
+                .onStatus(HttpStatusCode::isError, (request, serverResponse) -> {
+                    throw new AppException(serverResponse.toString(), serverResponse.getStatusCode());
+                })
+                .requiredBody(CVParseResponse.class);
 
         return CVParsedResult.builder()
                 .chromaId(response.getChromaId())
@@ -85,24 +73,21 @@ public class AIService {
     }
 
     public List<JobMatchResponse> recommendJobs(String chromaId, int topK) {
-        Map<String, Object> body = Map.of(
-                "chroma_id", chromaId,
-                "top_k", topK
-        );
+        validateService();
 
-        JobMatchResponse[] response = restClient.get()
-                .uri(uriBuilder -> uriBuilder
-                        .path(aiServiceUrl + "/recommend/" + chromaId)
-                        .queryParam("top_k", topK)
-                        .build())
-                .header("X-API-KEY", "random_api_key_for_testing")
+        JobMatchResponse[] serverResponse = restClient.get()
+                .uri(aiServiceUrl + "/recommend/{chromaId}?top_k={topK}", chromaId, topK)
+                .header("X-API-KEY", apiKey)
                 .retrieve()
+                .onStatus(HttpStatusCode::isError, (request, response) -> {
+                    throw new AppException(response.toString(), response.getStatusCode());
+                })
                 .body(JobMatchResponse[].class);
 
-        return response != null ? List.of(response) : List.of();
+        return serverResponse != null ? List.of(serverResponse) : List.of();
     }
 
-    public void upsertJob(Job job){
+    public void upsertJob(Job job) {
         validateService();
         Map<String, Object> body = Map.of(
                 "job_id", job.getId().toString(),
@@ -114,24 +99,41 @@ public class AIService {
         System.out.println("Body" + body);
         restClient.post()
                 .uri(aiServiceUrl + "/jobs")
-                .header("X-API-KEY", "random_api_key_for_testing")
+                .header("X-API-KEY", apiKey)
                 .contentType(MediaType.APPLICATION_JSON)
                 .body(body)
                 .retrieve()
+                .onStatus(HttpStatusCode::isError, (request, response) -> {
+                    throw new AppException(response.toString(), response.getStatusCode());
+                })
+                .toBodilessEntity();
+
+    }
+
+    public void deletedJobVector(String chromaId) {
+        validateService();
+
+        restClient.delete()
+                .uri(aiServiceUrl + "/jobs/" + chromaId)
+                .header("X-API-KEY", apiKey)
+                .retrieve()
+                .onStatus(HttpStatusCode::isError, (request, response) -> {
+                    throw new AppException(response.toString(), response.getStatusCode());
+                })
                 .toBodilessEntity();
     }
 
-    public void deletedJobVector(String chromaId){
-        try {
-            restClient.delete()
-                    .uri(aiServiceUrl + "/jobs/" + chromaId)
-                    .header("X-API-KEY", "random_api_key_for_testing")
-                    .retrieve()
-                    .toBodilessEntity();
-        }
-        catch (Exception e){
-            throw new AppException("Internal server error", HttpStatus.INTERNAL_SERVER_ERROR);
-        }
+    public void deleteCVParsedVectors(String chromaId) {
+        validateService();
+
+        restClient.delete()
+                .uri(aiServiceUrl + "/cv_parsed/" + chromaId)
+                .header("X-API-KEY", apiKey)
+                .retrieve()
+                .onStatus(HttpStatusCode::isError, (request, response) -> {
+                    throw new AppException(response.toString(), response.getStatusCode());
+                })
+                .toBodilessEntity();
     }
 
     @Data

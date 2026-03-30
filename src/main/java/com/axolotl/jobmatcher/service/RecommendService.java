@@ -20,7 +20,7 @@ public class RecommendService {
 
     private final AIService aiService;
     private final CVRepository cvRepository;
-//    private final JobRepository jobRepository;
+
     private final JobService jobService;
 
     public List<JobResponse> recommendJobs(UUID userId, int topK) {

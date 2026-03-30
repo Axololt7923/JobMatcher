@@ -1,14 +1,14 @@
 package com.axolotl.jobmatcher.exception;
 
 import lombok.Getter;
-import org.springframework.http.HttpStatus;
+import org.springframework.http.HttpStatusCode;
 
 @Getter
 public class AppException extends RuntimeException {
 
-    private final HttpStatus status;
+    private final HttpStatusCode status;
 
-    public AppException(String message, HttpStatus status) {
+    public AppException(String message, HttpStatusCode status) {
         super(message);
         this.status = status;
     }

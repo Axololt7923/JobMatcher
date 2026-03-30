@@ -6,12 +6,12 @@ import com.axolotl.jobmatcher.dto.user.LoginRequest;
 import com.axolotl.jobmatcher.dto.user.LoginResponse;
 import com.axolotl.jobmatcher.dto.user.UserResponse;
 import com.axolotl.jobmatcher.entity.Company;
-import com.axolotl.jobmatcher.entity.Job;
 import com.axolotl.jobmatcher.entity.User;
 import com.axolotl.jobmatcher.exception.AppException;
 import com.axolotl.jobmatcher.repository.UserRepository;
 import com.axolotl.jobmatcher.security.JwtService;
 import com.axolotl.jobmatcher.repository.CompanyRepository;
+import com.axolotl.jobmatcher.utils.Utils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -35,23 +35,11 @@ public class UserService {
             throw new AppException("Email is already registered", HttpStatus.CONFLICT);
         }
 
-        Company company = null;
-
-        if (request.getCompanyId() != null) {
-
-            company = companyRepository.findById(request.getCompanyId())
-                    .orElseThrow(() -> new AppException("Company doesn't exist", HttpStatus.NOT_FOUND));
-
-            if (userRepository.existsByCompanyId(company.getId()))
-                throw new AppException("This company already have recruiter account", HttpStatus.CONFLICT);
-
-        }
-
         User user = User.builder()
                 .email(request.getEmail())
                 .password(passwordEncoder.encode(request.getPassword()))
                 .fullName(request.getFullName())
-                .company(company)
+                .company(null)
                 .build();
 
         User saved = userRepository.save(user);
@@ -70,6 +58,7 @@ public class UserService {
         return List.of(toResponse(user));
     }
 
+    @Deprecated
     public List<UserResponse> getAll(int limit, int offset) {
         if (limit > 100 || limit < 0) {
             throw new AppException("Limit must be less than 100 and bigger than 0", HttpStatus.BAD_REQUEST);
@@ -79,11 +68,7 @@ public class UserService {
         }
 
         List<User> users = userRepository.findAll();
-        int len_jobs = users.size();
-        int begin_idx = offset > len_jobs ? len_jobs - 1 : offset;
-        int end_idx = Math.min(begin_idx + limit, len_jobs);
-
-        return  users.subList(begin_idx, end_idx)
+        return Utils.getResponsePage(users, offset, limit)
                 .stream()
                 .map(this::toResponse)
                 .toList();
@@ -105,6 +90,7 @@ public class UserService {
                 .build();
     }
 
+    @Deprecated
     public void removeCompany(UUID userId) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new AppException("User doesn't exist", HttpStatus.NOT_FOUND));

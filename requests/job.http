@@ -1,5 +1,5 @@
 @baseUrl = http://localhost:8080
-@auth_token = eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJzZWVrZXJAZ21haWwuY29tIiwidXNlcklkIjoiMWEyY2U3MDUtNjkxNS00ZWFhLWFlMmMtZDc0Y2Y5Y2MzODBlIiwiaWF0IjoxNzc0NjMzNTk3LCJleHAiOjE3NzQ2Njk1OTd9.OOoPJBwt-PTYswwg8aZZhVt1zHLIFJsCT3h2UrtvNHY
+@auth_token = add_token
 
 ### Create Job
 POST {{baseUrl}}/api/jobs

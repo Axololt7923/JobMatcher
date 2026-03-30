@@ -4,6 +4,7 @@ import com.axolotl.jobmatcher.dto.job.JobRequest;
 import com.axolotl.jobmatcher.dto.job.JobResponse;
 import com.axolotl.jobmatcher.service.JobService;
 import com.axolotl.jobmatcher.security.UserPrincipal;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -15,6 +16,7 @@ import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/jobs")
+@SecurityRequirement(name = "bearerAuth")
 @RequiredArgsConstructor
 public class JobController {
 
@@ -32,24 +34,12 @@ public class JobController {
         return ResponseEntity.ok(jobService.getById(id));
     }
 
-    @GetMapping
-    public ResponseEntity<List<JobResponse>> getAllActivate(
-            @RequestParam(required = false) String title,
-            @RequestParam(defaultValue = "10" ) int limit,
-            @RequestParam(defaultValue = "0") int offset) {
-        if (title != null) {
-            return ResponseEntity.ok(jobService.search(title));
-        }
-        return ResponseEntity.ok(jobService.getAllActivate(limit, offset));
-    }
-
     @GetMapping({"/all"})
-    public ResponseEntity<List<JobResponse>> getAll(
-            @RequestParam(required = false) String title) {
-        if (title != null) {
-            return ResponseEntity.ok(jobService.search(title));
-        }
-        return ResponseEntity.ok(jobService.getAll());
+    public ResponseEntity<List<JobResponse>> job(
+            @RequestParam(defaultValue = "true") Boolean isActive,
+            @RequestParam(required = false, defaultValue = "20") int limit,
+            @RequestParam(required = false, defaultValue = "0") int offset) {
+        return ResponseEntity.ok(jobService.getAll(isActive, limit, offset));
     }
 
     @PutMapping("/{id}")

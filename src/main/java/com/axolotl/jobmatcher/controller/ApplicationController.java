@@ -4,6 +4,7 @@ import com.axolotl.jobmatcher.dto.application.ApplicationRequest;
 import com.axolotl.jobmatcher.dto.application.ApplicationResponse;
 import com.axolotl.jobmatcher.entity.Application;
 import com.axolotl.jobmatcher.service.ApplicationService;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -12,9 +13,10 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 import java.util.UUID;
 
-@Deprecated(forRemoval = false)
+@Deprecated
 @RestController
 @RequestMapping("/api/applications")
+@SecurityRequirement(name = "bearerAuth")
 @RequiredArgsConstructor
 public class ApplicationController {
 

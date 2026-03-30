@@ -3,6 +3,7 @@ package com.axolotl.jobmatcher.controller;
 import com.axolotl.jobmatcher.dto.job.JobResponse;
 import com.axolotl.jobmatcher.security.UserPrincipal;
 import com.axolotl.jobmatcher.service.RecommendService;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -12,6 +13,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/recommend")
+@SecurityRequirement(name = "bearerAuth")
 @RequiredArgsConstructor
 public class RecommendController {
 

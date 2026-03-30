@@ -2,19 +2,37 @@ services:
   postgres:
     image: postgres:16-alpine
     container_name: job-matcher-db
+    env_file: .env
     environment:
-      POSTGRES_DB: job-matcher
-      POSTGRES_USER: ax0lotl79
-      POSTGRES_PASSWORD: password
+      POSTGRES_URL: ${DB_URL}
+      POSTGRES_DB: ${DB_NAME}
+      POSTGRES_USER: ${DB_USERNAME}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
     ports:
-      - "5432:5432"                  # host:container
+      - "5432:5432"
     volumes:
-      - postgres_data:/var/lib/postgresql/data   # no data lost when restart
+      - postgres_data:/var/lib/postgresql/data
       - ./sql/init.sql:/docker-entrypoint-initdb.d/init.sql
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ax0lotl79 -d job-matcher"]
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USERNAME} -d ${DB_NAME}"]
       interval: 10s
       timeout: 5s
       retries: 5
+  app:
+    build: .
+    container_name: job-matcher-app
+    env_file: .env
+    ports:
+      - "8080:8080"
+    environment:
+      DB_URL: ${DB_URL}
+      DB_USERNAME: ${DB_USERNAME}
+      DB_PASSWORD: ${DB_PASSWORD}
+      JWT_SECRET: ${JWT_SECRET}
+      AI_SERVICE_URL: ${AI_SERVICE_URL}
+      AI_SERVICE_KEY: ${AI_SERVICE_KEY}
+    depends_on:
+      postgres:
+        condition: service_healthy
 volumes:
   postgres_data:
