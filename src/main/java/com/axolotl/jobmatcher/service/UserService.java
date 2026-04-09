@@ -1,18 +1,18 @@
 package com.axolotl.jobmatcher.service;
 
 // service/UserService.java
+
 import com.axolotl.jobmatcher.dto.RegisterRequest;
 import com.axolotl.jobmatcher.dto.user.LoginRequest;
 import com.axolotl.jobmatcher.dto.user.LoginResponse;
 import com.axolotl.jobmatcher.dto.user.UserResponse;
-import com.axolotl.jobmatcher.entity.Company;
 import com.axolotl.jobmatcher.entity.User;
 import com.axolotl.jobmatcher.exception.AppException;
 import com.axolotl.jobmatcher.repository.UserRepository;
 import com.axolotl.jobmatcher.security.JwtService;
-import com.axolotl.jobmatcher.repository.CompanyRepository;
 import com.axolotl.jobmatcher.utils.Utils;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -27,7 +27,6 @@ public class UserService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
-    private final CompanyRepository companyRepository;
 
     public UserResponse register(RegisterRequest request) {
 
@@ -52,23 +51,18 @@ public class UserService {
                 .build();
     }
 
-    public List<UserResponse> getById(UUID id) {
+    public UserResponse getById(UUID id) {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new AppException("User doesn't exist", HttpStatus.NOT_FOUND));
-        return List.of(toResponse(user));
+        return toResponse(user);
     }
 
     @Deprecated
-    public List<UserResponse> getAll(int limit, int offset) {
-        if (limit > 100 || limit < 0) {
-            throw new AppException("Limit must be less than 100 and bigger than 0", HttpStatus.BAD_REQUEST);
-        }
-        if (offset < 0) {
-            throw new AppException("Offset must be bigger than 0", HttpStatus.BAD_REQUEST);
-        }
+    public List<UserResponse> getAll(int offset, int limit) {
 
-        List<User> users = userRepository.findAll();
-        return Utils.getResponsePage(users, offset, limit)
+        Utils.validatePaging(offset, limit);
+
+        return userRepository.findAll(PageRequest.of(offset / limit, limit))
                 .stream()
                 .map(this::toResponse)
                 .toList();

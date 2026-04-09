@@ -2,8 +2,8 @@ package com.axolotl.jobmatcher.controller;
 
 import com.axolotl.jobmatcher.dto.job.JobRequest;
 import com.axolotl.jobmatcher.dto.job.JobResponse;
-import com.axolotl.jobmatcher.service.JobService;
 import com.axolotl.jobmatcher.security.UserPrincipal;
+import com.axolotl.jobmatcher.service.JobService;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -23,35 +23,35 @@ public class JobController {
     private final JobService jobService;
 
     @PostMapping
-    public ResponseEntity<JobResponse> create(
+    public ResponseEntity<JobResponse> createJob(
             @Valid @RequestBody JobRequest request,
             @AuthenticationPrincipal UserPrincipal principal) {
         return ResponseEntity.ok(jobService.create(request, principal.getId()));
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<JobResponse> getById(@PathVariable UUID id) {
+    public ResponseEntity<JobResponse> getJobById(@PathVariable UUID id) {
         return ResponseEntity.ok(jobService.getById(id));
     }
 
     @GetMapping({"/all"})
-    public ResponseEntity<List<JobResponse>> job(
+    public ResponseEntity<List<JobResponse>> getAllJobs(
             @RequestParam(defaultValue = "true") Boolean isActive,
             @RequestParam(required = false, defaultValue = "20") int limit,
             @RequestParam(required = false, defaultValue = "0") int offset) {
-        return ResponseEntity.ok(jobService.getAll(isActive, limit, offset));
+        return ResponseEntity.ok(jobService.getAll(isActive, offset, limit));
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<JobResponse> update(
+    public ResponseEntity<JobResponse> updateJob(
             @PathVariable UUID id,
             @Valid @RequestBody JobRequest request,
             @AuthenticationPrincipal UserPrincipal principal) {
-        return ResponseEntity.ok( jobService.update(id, principal.getId() , request) );
+        return ResponseEntity.ok(jobService.update(id, principal.getId(), request));
     }
 
     @PatchMapping("/{id}/inactivate")
-    public ResponseEntity<JobResponse> inactivate(
+    public ResponseEntity<JobResponse> inactivateJob(
             @PathVariable UUID id,
             @AuthenticationPrincipal UserPrincipal principal) {
         jobService.inactivate(id, principal.getId());

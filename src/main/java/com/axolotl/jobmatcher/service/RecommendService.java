@@ -5,7 +5,6 @@ import com.axolotl.jobmatcher.dto.job.JobResponse;
 import com.axolotl.jobmatcher.entity.CV;
 import com.axolotl.jobmatcher.exception.AppException;
 import com.axolotl.jobmatcher.repository.CVRepository;
-//import com.axolotl.jobmatcher.repository.JobRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -36,15 +35,9 @@ public class RecommendService {
 
         List<JobMatchResponse> matches = aiService.recommendJobs(cv.getChromaId(), topK);
 
-        return matches.stream()
-                .map(match -> {
-                    try{
-                        return jobService.getById(UUID.fromString(match.getJobId()));}
-                    catch (Exception e){
-                        return null;
-                    }
-                })
-                .filter(Objects::nonNull)
-                .toList();
+        return jobService.findAllByIds(
+                matches.stream()
+                        .map((match) -> UUID.fromString(match.getJobId())
+                        ).toList());
     }
 }

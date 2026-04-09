@@ -10,6 +10,7 @@ import com.axolotl.jobmatcher.repository.UserRepository;
 import com.axolotl.jobmatcher.utils.Utils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
@@ -56,14 +57,9 @@ public class CompanyService {
         return List.of(toResponse(company));
     }
 
-    public List<CompanyResponse> getAll(int limit, int offset) {
-        if (limit > 100 || limit < 0) {
-            throw new AppException("Limit must be less than 100 and bigger than 0", HttpStatus.BAD_REQUEST);
-        }
-        if (offset < 0) {
-            throw new AppException("Offset must be bigger than 0", HttpStatus.BAD_REQUEST);
-        }
-        return Utils.getResponsePage(companyRepository.findAll(), offset, limit)
+    public List<CompanyResponse> getAll(int offset, int limit) {
+        Utils.validatePaging(offset, limit);
+        return companyRepository.findAll(PageRequest.of(offset / limit, limit))
                 .stream()
                 .map(this::toResponse)
                 .toList();
@@ -78,11 +74,14 @@ public class CompanyService {
     }
 
     public CompanyResponse update(CompanyRequest request, UUID userId) {
+        User owner = userRepository.findById(userId)
+                .orElseThrow(() -> new AppException("User doesn't exist", HttpStatus.NOT_FOUND));
 
-        Company company = userRepository.findCompanyByUserId(userId)
-                .orElseThrow(() -> new AppException("Not found", HttpStatus.NOT_FOUND));
-
-        if ( !company.getName().equals(request.getName())) {
+        Company company = owner.getCompany();
+        if (company == null) {
+            throw new AppException("Company doesn't exist", HttpStatus.CONFLICT);
+        }
+        if (!company.getName().equals(request.getName())) {
             throw new AppException("Can not change company name", HttpStatus.CONFLICT);
         }
 
@@ -93,20 +92,18 @@ public class CompanyService {
         return toResponse(companyRepository.save(company));
     }
 
-    public void delete( UUID userId) {
+    public void delete(UUID userId) {
         User owner = userRepository.findById(userId)
                 .orElseThrow(() -> new AppException("User doesn't exist", HttpStatus.NOT_FOUND));
 
-        try {
-            companyRepository.deleteById(owner.getCompany().getId());
-        }
-        catch (Exception e) {
+        Company company = owner.getCompany();
+        if (company == null) {
             throw new AppException("Company doesn't exist", HttpStatus.CONFLICT);
         }
+
+        companyRepository.delete(company);
         owner.setCompany(null);
-
         userRepository.save(owner);
-
     }
 
     private CompanyResponse toResponse(Company company) {

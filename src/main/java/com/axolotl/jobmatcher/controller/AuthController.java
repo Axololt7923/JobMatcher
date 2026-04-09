@@ -1,6 +1,7 @@
 package com.axolotl.jobmatcher.controller;
 
 // controller/AuthController.java
+
 import com.axolotl.jobmatcher.dto.RegisterRequest;
 import com.axolotl.jobmatcher.dto.user.LoginRequest;
 import com.axolotl.jobmatcher.dto.user.LoginResponse;
@@ -33,7 +34,7 @@ public class AuthController {
         return ResponseEntity.noContent().build();
     }
 
-    @GetMapping("/heath")
+    @GetMapping("/health")
     public ResponseEntity<String> heath() {
         return ResponseEntity.ok("OK");
     }

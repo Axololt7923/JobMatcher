@@ -24,7 +24,7 @@ public class CVController {
     private final CVService cvService;
 
     @PostMapping(value = "", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public ResponseEntity<CVResponse> upload(
+    public ResponseEntity<CVResponse> uploadCV(
             @RequestPart("file") MultipartFile file,
             @AuthenticationPrincipal UserPrincipal principal
     ) throws IOException {
@@ -32,14 +32,14 @@ public class CVController {
     }
 
     @GetMapping
-    public ResponseEntity<List<CVResponse>> getByUserId(
+    public ResponseEntity<List<CVResponse>> getCVByUserId(
             @AuthenticationPrincipal UserPrincipal principal) {
         return ResponseEntity.ok(cvService.getByUserId(principal.getId()));
     }
 
     @DeleteMapping(value = "/{id}")
-    public ResponseEntity<String> delete(@PathVariable UUID id, @AuthenticationPrincipal UserPrincipal principal) {
+    public ResponseEntity<String> deleteCV(@PathVariable UUID id, @AuthenticationPrincipal UserPrincipal principal) {
         cvService.delete(id, principal.getId());
-        return ResponseEntity.ok("CV " + id + " has been deleted");
+        return ResponseEntity.noContent().build();
     }
 }

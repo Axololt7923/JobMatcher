@@ -4,13 +4,13 @@ import com.axolotl.jobmatcher.entity.Application;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
 
 @Deprecated(forRemoval = false)
 public interface ApplicationRepository extends JpaRepository<Application, UUID> {
     List<Application> findByUserId(UUID userId);
+
     List<Application> findByJobId(UUID jobId);
-//    Optional<Application> findByUserIdAndJobId(UUID userId, UUID jobId);
+
     boolean existsByUserIdAndJobId(UUID userId, UUID jobId);
 }

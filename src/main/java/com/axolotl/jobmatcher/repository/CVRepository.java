@@ -9,6 +9,6 @@ import java.util.UUID;
 
 public interface CVRepository extends JpaRepository<CV, UUID> {
     List<CV> findByUserId(UUID userId);
+
     Optional<CV> findByUserIdAndIsActiveTrue(UUID userId);
-//    Optional<CV> findByChromaId(String chromaId);
 }

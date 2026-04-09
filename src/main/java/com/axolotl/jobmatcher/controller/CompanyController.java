@@ -23,22 +23,23 @@ public class CompanyController {
     private final CompanyService companyService;
 
     @PostMapping
-    public ResponseEntity<CompanyResponse> company(
+    public ResponseEntity<CompanyResponse> postCompany(
             @Valid @RequestBody CompanyRequest request
-            ,@AuthenticationPrincipal UserPrincipal principal
+            , @AuthenticationPrincipal UserPrincipal principal
     ) {
         return ResponseEntity.ok(companyService.create(request, principal.getId()));
     }
 
     @GetMapping
-    public ResponseEntity<List<CompanyResponse>> company(
-            @RequestParam(required = false) UUID id,
+    public ResponseEntity<List<CompanyResponse>> getCompanies(
             @RequestParam(defaultValue = "20") int limit,
             @RequestParam(defaultValue = "0") int offset) {
-        if (id != null) {
-            return ResponseEntity.ok(companyService.getById(id));
-        }
-        return ResponseEntity.ok(companyService.getAll(limit, offset));
+        return ResponseEntity.ok(companyService.getAll(offset, limit));
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<CompanyResponse> getCompanyById(@PathVariable UUID id){
+        return ResponseEntity.ok(companyService.getById(id).getFirst());
     }
 
     @PutMapping("/update")
@@ -49,9 +50,9 @@ public class CompanyController {
     }
 
     @DeleteMapping
-    public ResponseEntity<Void> delete(
+    public ResponseEntity<Void> deleteCompany(
             @AuthenticationPrincipal UserPrincipal principal) {
-        companyService.delete( principal.getId());
+        companyService.delete(principal.getId());
         return ResponseEntity.noContent().build();
     }
 }

@@ -4,8 +4,7 @@ services:
     container_name: job-matcher-db
     env_file: .env
     environment:
-      POSTGRES_URL: ${DB_URL}
-      POSTGRES_DB: ${DB_NAME}
+      POSTGRES_DB:  ${DB_NAME}
       POSTGRES_USER: ${DB_USERNAME}
       POSTGRES_PASSWORD: ${DB_PASSWORD}
     ports:
@@ -19,11 +18,15 @@ services:
       timeout: 5s
       retries: 5
   app:
-    build: .
     container_name: job-matcher-app
-    env_file: .env
+    depends_on:
+      postgres:
+        condition: service_healthy
     ports:
       - "8080:8080"
+    build: .
+    env_file:
+      - .env
     environment:
       DB_URL: ${DB_URL}
       DB_USERNAME: ${DB_USERNAME}
@@ -31,8 +34,7 @@ services:
       JWT_SECRET: ${JWT_SECRET}
       AI_SERVICE_URL: ${AI_SERVICE_URL}
       AI_SERVICE_KEY: ${AI_SERVICE_KEY}
-    depends_on:
-      postgres:
-        condition: service_healthy
+      CONNECT_TO: ${CONNECT_TIMEOUT}
+      READ_TO: ${READ_TIMEOUT}
 volumes:
   postgres_data:

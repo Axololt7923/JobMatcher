@@ -1,6 +1,5 @@
 package com.axolotl.jobmatcher.dto.user;
 
-import com.axolotl.jobmatcher.entity.User;
 import lombok.Builder;
 import lombok.Data;
 

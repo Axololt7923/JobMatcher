@@ -9,8 +9,10 @@ import com.axolotl.jobmatcher.repository.JobRepository;
 import com.axolotl.jobmatcher.repository.UserRepository;
 import com.axolotl.jobmatcher.utils.Utils;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.UUID;
@@ -24,6 +26,7 @@ public class JobService {
 
     private final AIService aiService;
 
+    @Transactional
     public JobResponse create(JobRequest request, UUID recruiterId) {
         User recruiter = userRepository.findById(recruiterId).orElseThrow(
                 () -> new AppException("User doesn't exist", HttpStatus.NOT_FOUND)
@@ -42,15 +45,10 @@ public class JobService {
                 .createdBy(recruiter)
                 .build();
 
-        try {
-            job = jobRepository.save(job);
-            aiService.upsertJob(job);
-            return toResponse(jobRepository.save(job));
-        }
-        catch (Exception e) {
-            jobRepository.delete(job);
-            throw new AppException("Failed to upsert job", HttpStatus.INTERNAL_SERVER_ERROR);
-        }
+
+        job = jobRepository.save(job);
+        aiService.upsertJob(job);
+        return toResponse(jobRepository.save(job));
     }
 
     public JobResponse getById(UUID id) {
@@ -59,40 +57,31 @@ public class JobService {
         return toResponse(job);
     }
 
-    public List<JobResponse> getAllActivate(int limit, int offset) {
-
-        if (limit > 100 || limit < 0) {
-            throw new AppException("Limit must be less than 100 and bigger than 0", HttpStatus.BAD_REQUEST);
-        }
-        if (offset < 0) {
-            throw new AppException("Offset must be bigger than 0", HttpStatus.BAD_REQUEST);
-        }
-
-        List<Job> jobs = jobRepository.findByIsActiveTrue();
-        int len_jobs = jobs.size();
-        int begin_idx = offset > len_jobs ? len_jobs - 1 : offset;
-        int end_idx = Math.min(begin_idx + limit, len_jobs);
-
-        return jobs.subList(begin_idx, end_idx)
+    public List<JobResponse> findAllByIds(List<UUID> ids) {
+        return jobRepository.findAllById(ids)
                 .stream()
                 .map(this::toResponse)
                 .toList();
     }
 
-    public List<JobResponse> getAll( boolean isActive, int limit, int offset) {
+    public List<JobResponse> getAllActivate(int limit, int offset) {
+
+        Utils.validatePaging(offset, limit);
+
+        return jobRepository.findByIsActiveTrue(PageRequest.of(offset / limit, limit))
+                .stream()
+                .map(this::toResponse)
+                .toList();
+    }
+
+    public List<JobResponse> getAll(boolean isActive, int limit, int offset) {
         if (isActive) {
             return getAllActivate(limit, offset);
         }
-        if (limit > 100 || limit < 0) {
-            throw new AppException("Limit must be less than 100 and bigger than 0", HttpStatus.BAD_REQUEST);
-        }
-        if (offset < 0) {
-            throw new AppException("Offset must be bigger than 0", HttpStatus.BAD_REQUEST);
-        }
 
-        List<Job> jobs = jobRepository.findAll();
+        Utils.validatePaging(offset, limit);
 
-        return Utils.getResponsePage(jobs, offset, limit)
+        return jobRepository.findAll(PageRequest.of(offset / limit, limit))
                 .stream()
                 .map(this::toResponse)
                 .toList();
@@ -118,7 +107,6 @@ public class JobService {
             throw new AppException("No permission", HttpStatus.FORBIDDEN);
         }
 
-        job.setTitle(request.getTitle());
         job.setDescription(request.getDescription());
         job.setRequirements(request.getRequirements());
         job.setSalaryMin(request.getSalaryMin());
@@ -147,8 +135,7 @@ public class JobService {
             job.setIsActive(false);
             aiService.validateService();
             jobRepository.save(job);
-        }
-        catch (Exception e) {
+        } catch (Exception e) {
             throw new AppException("Failed to inactivate job", HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
@@ -180,6 +167,5 @@ public class JobService {
         }
         return job.getCreatedBy() != null ? job.getCreatedBy().getEmail() : null;
     }
-
 
 }

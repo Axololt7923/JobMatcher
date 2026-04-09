@@ -8,11 +8,12 @@ import com.axolotl.jobmatcher.exception.AppException;
 import com.axolotl.jobmatcher.repository.CVParsedDataRepository;
 import com.axolotl.jobmatcher.repository.CVRepository;
 import com.axolotl.jobmatcher.repository.UserRepository;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
-import com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -30,15 +31,10 @@ public class CVService {
     private final UserRepository userRepository;
     private final AIService aiService;
 
+    @Transactional
     public CVResponse upload(UUID userId, MultipartFile file) throws IOException {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new AppException("User doesn't exist", HttpStatus.NOT_FOUND));
-
-        String fileName  = UUID.randomUUID() + "_" + file.getOriginalFilename();
-        Path uploadPath  = Paths.get("uploads/cv");
-        Files.createDirectories(uploadPath);
-        Path filePath = uploadPath.resolve(fileName);
-        Files.write(filePath, file.getBytes());
 
         cvRepository.findByUserIdAndIsActiveTrue(userId)
                 .ifPresent(oldCV -> {
@@ -47,33 +43,35 @@ public class CVService {
                     cvRepository.save(oldCV);
                 });
 
+        AIService.CVParsedResult parsed = aiService.parseCV(file.getBytes(), user.getId());
+
+//      save the .pdf
+        String fileName = UUID.randomUUID() + "_" + file.getOriginalFilename();
+        Path uploadPath = Paths.get("uploads/cv");
+        Files.createDirectories(uploadPath);
+        Path filePath = uploadPath.resolve(fileName);
+        Files.write(filePath, file.getBytes());
+
         CV cv = CV.builder()
                 .user(user)
                 .fileUrl(filePath.toString())
                 .isActive(true)
                 .build();
-        try {
-            AIService.CVParsedResult parsed = aiService.parseCV(file.getBytes(), user.getId());
-            cv.setChromaId(parsed.getChromaId());
-            cv = cvRepository.save(cv);
 
-            CVParsedData parsedData = CVParsedData.builder()
-                    .cv(cv)
-                    .skills(parsed.getSkills())
-                    .experienceYears(parsed.getExperienceYears())
-                    .educationLevel(parsed.getEducationLevel())
-                    .languages(parsed.getLanguages())
-                    .summary(parsed.getSummary())
-                    .rawJson(new ObjectMapper().writeValueAsString(parsed))
-                    .build();
+        cv.setChromaId(parsed.getChromaId());
+        cv = cvRepository.save(cv);
 
-            cvParsedDataRepository.save(parsedData);
-
-            return toResponse(cv, parsedData);
-        }
-        catch (Exception e) {
-            throw new AppException("Failed to upload CV", HttpStatus.INTERNAL_SERVER_ERROR);
-        }
+        CVParsedData parsedData = CVParsedData.builder()
+                .cv(cv)
+                .skills(parsed.getSkills())
+                .experienceYears(parsed.getExperienceYears())
+                .educationLevel(parsed.getEducationLevel())
+                .languages(parsed.getLanguages())
+                .summary(parsed.getSummary())
+                .rawJson(new ObjectMapper().writeValueAsString(parsed))
+                .build();
+        cvParsedDataRepository.save(parsedData);
+        return toResponse(cv, parsedData);
     }
 
     public List<CVResponse> getByUserId(UUID userId) {
@@ -103,8 +101,7 @@ public class CVService {
 
             if (result) {
                 System.out.println("Deleted file: " + path);
-            }
-            else {
+            } else {
                 System.out.println("File not found");
             }
         } catch (IOException e) {

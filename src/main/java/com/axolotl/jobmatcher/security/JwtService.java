@@ -21,7 +21,7 @@ public class JwtService {
     public JwtService(
             @Value("${jwt.expiration}") long tokenExpiration
             , @Value("${jwt.secret}") String secretKey
-    ){
+    ) {
         this.signingSecretKey = Keys.hmacShaKeyFor(secretKey.getBytes(StandardCharsets.UTF_8));
         this.tokenExpiration = tokenExpiration;
     }
@@ -36,7 +36,7 @@ public class JwtService {
                 .compact();
     }
 
-    public Claims extractClaims(String token){
+    public Claims extractClaims(String token) {
         return Jwts.parser()
                 .verifyWith(this.signingSecretKey)
                 .build()

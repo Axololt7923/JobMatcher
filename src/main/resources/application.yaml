@@ -1,12 +1,17 @@
 ai:
   service:
-    url: ${AI_SERVICE_URL}
-    key: ${AI_SERVICE_KEY}
+    url: ${AI_SERVICE_URL:http://localhost:8000}
+    key: ${AI_SERVICE_KEY:random_api_key_for_testing}
+    connect-timeout: ${CONNECT_TO:10s}
+    read-timeout: ${READ_TO:60s}
 spring:
   datasource:
-    url: jdbc:postgresql://postgres:5432/${DB_NAME}
-    username: ${DB_USER}
-    password: ${DB_PASSWORD}
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/job-matcher-db}
+    username: ${DB_USERNAME:ax0lotl79}
+    password: password
+    hikari:
+      connection-timeout: 30000
+      maximum-pool-size: 5
   jpa:
     hibernate:
       ddl-auto: validate
@@ -19,10 +24,9 @@ spring:
     multipart:
       max-file-size: 10MB
       max-request-size: 10MB
-
 jwt:
-  secret: ${JWT_SECRET}
+  secret: ${JWT_SECRET:a_long_long_secret_key_for_testing}
   expiration: 36000000 #10 hours
 server:
-  port: 8080
+  port: ${PORT:8080}
 

@@ -8,7 +8,8 @@ import java.util.UUID;
 
 public interface CompanyRepository extends JpaRepository<Company, UUID> {
     List<Company> findByNameContainingIgnoreCase(String name);
-//    Company getCompanyById(UUID id);
+
     boolean existsByName(String name);
+
     boolean existsByContactEmail(String email);
 }
