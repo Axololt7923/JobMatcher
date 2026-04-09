@@ -62,6 +62,18 @@ git clone https://github.com/Axololt7923/JobMatcher.git
 cd JobMatcher
 ```
 
+### 1.1 ***Create Postgre via Docker or you can create on local***
+
+
+*** local(via psql):
+```bash
+psql -h localhost -U {your_username} -d {database_name} -f ./sql/init.sql
+
+```
+*** docker:
+* read below
+
+### 1.2 ***Build the project***
 ```bash
 mvn clean install
 ```
@@ -77,12 +89,24 @@ JWT_SECRET=your_key
 
 AI_SERVICE_URL=your_ai_url
 AI_SERVICE_KEY=your_key
+
+CONNECT_TIMEOUT=5000
+READ_TIMEOUT=30000
 ```
 
 ## Running
+
+*** Product
 ```bash
 docker-compose up --build
 ```
+
+[!WARNING] if you on dev period you should comment the app part in docker-compose.yml and run cmd
+```bash
+docker-compose up --build
+mvn spring-boot:run
+```
+
 ![Server Running](assets/running_screen.png)
 ![Server Running](assets/docker_running.png)
 
